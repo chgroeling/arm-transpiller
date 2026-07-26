@@ -1,0 +1,5 @@
+if ConditionPassed() then
+      EncodingSpecificOperations();
+      offset = Shift(R[m], shift_t, shift_n, APSR.C);
+      address = R[n] + offset;
+      MemU[address,4] = R[t];

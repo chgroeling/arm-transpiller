@@ -1,0 +1,5 @@
+// EOR (immediate) — T1 encoding
+if Rd == '1111' && S == '1' then SEE TEQ (immediate);
+d = UInt(Rd); n = UInt(Rn); setflags = (S == '1');
+(imm32, carry) = ThumbExpandImm_C(i:imm3:imm8, APSR.C);
+if d == 13 || (d == 15 && S == '0') || n IN {13,15} then UNPREDICTABLE;

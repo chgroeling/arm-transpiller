@@ -1,0 +1,5 @@
+if Rd == '1111' && S == '1' then SEE CMP (immediate);
+if Rn == '1101' then SEE SUB (SP minus immediate);
+d = UInt(Rd); n = UInt(Rn); setflags = (S == '1');
+imm32 = ThumbExpandImm(i:imm3:imm8);
+if d == 13 || (d == 15 && S == '0') || n == 15 then UNPREDICTABLE;

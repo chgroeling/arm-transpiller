@@ -1,0 +1,3 @@
+if !Consistent(Rm) then UNPREDICTABLE;
+d = UInt(Rd); m = UInt(Rm);
+if d IN {13,15} || m IN {13,15} then UNPREDICTABLE;

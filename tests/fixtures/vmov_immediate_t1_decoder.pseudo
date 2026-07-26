@@ -1,0 +1,5 @@
+dp_operation = (sz == '1');
+if dp_operation then
+    d = UInt(D:Vd); imm64 = VFPExpandImm(imm4H:imm4L, 64);
+else
+    d = UInt(Vd:D); imm32 = VFPExpandImm(imm4H:imm4L, 32);

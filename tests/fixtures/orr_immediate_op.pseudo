@@ -1,0 +1,9 @@
+if ConditionPassed() then
+      EncodingSpecificOperations();
+      result = R[n] OR imm32;
+      R[d] = result;
+      if setflags then
+          APSR.N = result<31>;
+          APSR.Z = IsZeroBit(result);
+          APSR.C = carry;
+          // APSR.V unchanged

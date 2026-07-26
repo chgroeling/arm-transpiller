@@ -1,0 +1,3 @@
+d = UInt(Rd); n = UInt(Rn); m = UInt(Rm); setflags = (S == '1');
+(shift_t, shift_n) = DecodeImmShift(type, imm3:imm2);
+if d IN {13,15} || n IN {13,15} || m IN {13,15} then UNPREDICTABLE;

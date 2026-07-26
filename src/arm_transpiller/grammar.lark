@@ -1,0 +1,147 @@
+HEX_INT: "0x" HEXDIGIT+
+
+BEGIN_KW: "begin"
+END_KW: "end"
+
+ASSIGN: ":=" | "="
+OR_OP: "||"
+AND_OP: "&&"
+EQ_OP: "==" | "!="
+REL_OP: "<=" | ">=" | "<" | ">"
+// Word-shaped operators need a trailing word boundary, or they match the
+// start of an identifier (NOTHING would lex as NOT HING).
+IN_OP: /IN\b/
+RANGE_OP: ".."
+CONCAT_OP: ":"
+ADD_OP: "+" | "-"
+MUL_OP: "*" | "/" | /MOD\b/ | /DIV\b/
+BITWISE_OP: /EOR\b/ | /OR\b/ | /AND\b/ | /XOR\b/
+UOP: "!" | "-" | /NOT\b/ | "~"
+UNPREDICTABLE_KW: "UNPREDICTABLE"
+UNDEFINED_KW: "UNDEFINED"
+REGISTER: "R"
+SEE_KW: "SEE"
+CASE_KW: "case"
+WHEN_KW: "when"
+BIT_LITERAL: "'0'" | "'1'"
+BITSTRING_LITERAL: /'[01]{2,}'/
+STRING: /"[^"]*"/
+COMMENT_TOKEN: /__CMT__"[^"]*"/
+SEE_ARG: /__SEE__"(?:[^"\\]|\\.)*"/
+WILDCARD: "-"
+
+%import common.INT
+%import common.CNAME
+%import common.WS
+%import common.HEXDIGIT
+
+// A CNAME that is not "R": R[...] is the register file, never an array.
+ARRAY_NAME: /(?!R\b)/ CNAME
+// A CNAME that is not "NOT": NOT is a unary operator, never a callee.
+FUNC_NAME: /(?!NOT\b)/ CNAME
+
+%ignore WS
+
+start: statement_list
+
+statement_list: (statement ";")* statement ";"?
+
+?statement: assignment
+          | destructure_assignment
+          | conditional
+          | unpredictable
+          | for_stmt
+          | statement_call
+          | see_stmt
+          | comment_statement
+          | case_stmt
+          | when_clause
+
+case_stmt: CASE_KW expression ("of")? body
+
+when_clause: WHEN_KW expression inline_comment? body
+
+comment_statement: COMMENT_TOKEN -> comment
+
+inline_comment: COMMENT_TOKEN ";" -> comment
+
+statement_call: FUNC_NAME "(" [expression ("," expression)*] ")"
+
+assignment: (CNAME | register_access | field_access | bit_index | array_access) ASSIGN expression
+
+destructure_assignment: "(" wildcard_or_ident ("," wildcard_or_ident)+ ")" ASSIGN expression
+
+wildcard_or_ident: WILDCARD -> wildcard
+                 | CNAME -> identifier
+
+block: "begin" statement_list "end"
+
+body: block
+    | statement
+
+conditional: "if" expression "then" body (";" "else" body)?
+
+for_stmt: "for" CNAME "=" expression "to" expression body
+
+unpredictable: UNPREDICTABLE_KW -> unpredictable
+             | UNDEFINED_KW -> undefined
+
+?expression: or_expr
+
+?or_expr: and_expr (OR_OP and_expr)*
+?and_expr: equality_expr (AND_OP equality_expr)*
+?equality_expr: relational_expr (EQ_OP relational_expr)*
+?relational_expr: bitwise_expr ((REL_OP bitwise_expr) | (IN_OP set_literal) | (IN_OP string_literal))*
+?bitwise_expr: concat_expr (BITWISE_OP concat_expr)*
+?concat_expr: additive_expr (CONCAT_OP additive_expr)*
+?additive_expr: multiplicative_expr (ADD_OP multiplicative_expr)*
+?multiplicative_expr: unary_expr (MUL_OP unary_expr)*
+
+?unary_expr: UOP atom
+           | atom
+
+?atom: hex_literal
+      | bit_literal
+      | bitstring_literal
+      | string_literal
+      | range_expr
+      | INT -> int_literal
+      | bit_range
+      | bit_index
+      | field_access
+      | CNAME -> identifier
+      | function_call
+      | register_access
+      | array_access
+      | if_expr
+      | set_literal
+      | tuple_literal
+      | "(" expression ")"
+
+if_expr: "if" expression "then" expression "else" expression
+
+hex_literal: HEX_INT
+bit_literal: BIT_LITERAL
+bitstring_literal: BITSTRING_LITERAL
+
+string_literal: STRING
+
+function_call: FUNC_NAME "(" [expression ("," expression)*] ")"
+
+register_access: REGISTER "[" expression "]"
+
+array_access: ARRAY_NAME "[" expression ("," expression)* "]"
+
+set_literal: "{" [expression ("," expression)*] "}"
+
+tuple_literal: "(" expression ("," expression)+ ")"
+
+bit_range: CNAME "<" expression ":" expression ">"
+
+bit_index: CNAME "<" additive_expr ">"
+
+field_access: CNAME "." CNAME
+
+range_expr: INT RANGE_OP INT
+
+see_stmt: SEE_KW SEE_ARG

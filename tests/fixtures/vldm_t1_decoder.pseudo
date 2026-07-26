@@ -1,0 +1,12 @@
+if P == '0' && U == '0' && W == '0' then SEE "Related encodings";
+if P == '0' && U == '1' && W == '1' && Rn == '1101' then SEE VPOP;
+if P == '1' && W == '0' then SEE VLDR;
+if imm8<0> == '1' then SEE "FLDMX";
+if P == U && W == '1' then UNDEFINED;
+// Remaining combinations are PUW = 010 (IA without !), 011 (IA with !), 101 (DB with !)
+single_regs = FALSE; add = (U == '1'); wback = (W == '1');
+d = UInt(D:Vd); n = UInt(Rn); imm32 = ZeroExtend(imm8:'00', 32);
+regs = UInt(imm8) DIV 2;
+if n == 15 then UNPREDICTABLE;
+if regs == 0 || regs > 16 || (d+regs) > 32 then UNPREDICTABLE;
+if VFPSmallRegisterBank() && (d+regs) > 16 then UNPREDICTABLE;

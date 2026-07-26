@@ -1,0 +1,8 @@
+if opc2 != '000' && !(opc2 IN "10x") then SEE "Related encodings";
+to_integer = (opc2<2> == '1'); dp_operation = (sz == 1);
+if to_integer then
+     unsigned = (opc2<0> == '0'); round_zero = (op == '1');
+     d = UInt(Vd:D); m = if dp_operation then UInt(M:Vm) else UInt(Vm:M);
+else
+     unsigned = (op == '0'); round_nearest = FALSE;
+     m = UInt(Vm:M); d = if dp_operation then UInt(D:Vd) else UInt(Vd:D);

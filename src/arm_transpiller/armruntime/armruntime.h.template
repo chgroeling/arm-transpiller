@@ -1,0 +1,256 @@
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+/* ------------------------------------------------------------------ */
+/*  Tuple2Ret -- return type for functions that produce two values    */
+/* ------------------------------------------------------------------ */
+
+typedef struct {
+    int f0;
+    int f1;
+} Tuple2Ret;
+
+/* ------------------------------------------------------------------ */
+/*  Bit manipulation builtins                                         */
+/* ------------------------------------------------------------------ */
+
+static inline uint32_t UInt(uint32_t x) {
+    return x & 0xFFFFFFFFu;
+}
+
+static inline uint32_t Zeros(uint32_t n) {
+    (void)n;
+    return 0;
+}
+
+static inline uint32_t Ones(uint32_t n) {
+    (void)n;
+    return (1u << n) - 1u;
+}
+
+static inline uint32_t Replicate(uint32_t x, uint32_t n, uint32_t width) {
+    uint32_t result = 0;
+    for (uint32_t i = 0; i < n; i++) {
+        result = (result << width) | x;
+    }
+    return result;
+}
+
+static inline uint32_t concat_bits(uint32_t left, uint32_t right, int right_width) {
+    return (left << right_width) | (right & ((1u << right_width) - 1u));
+}
+
+static inline uint32_t BitCount(uint32_t x) {
+    return (uint32_t)__builtin_popcount(x);
+}
+
+static inline bool IsZeroBit(uint32_t x) {
+    return x == 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Sign/zero extension                                               */
+/* ------------------------------------------------------------------ */
+
+static inline uint32_t SignExtend(uint32_t x, uint32_t src_width) {
+    uint32_t mask = (1u << src_width) - 1u;
+    uint32_t v = x & mask;
+    if (v & (1u << (src_width - 1u))) v -= 1u << src_width;
+    return v;
+}
+
+static inline uint32_t ZeroExtend(uint32_t x, uint32_t n) {
+    uint32_t mask = (1u << n) - 1u;
+    return x & mask;
+}
+
+static inline int32_t SInt(uint32_t x, uint32_t n) {
+    if (x & (1u << (n - 1u))) return (int32_t)(x - (1u << n));
+    return (int32_t)x;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Alignment                                                         */
+/* ------------------------------------------------------------------ */
+
+static inline uint32_t Align(uint32_t x, uint32_t alignment) {
+    return x & ~(alignment - 1u);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Architectural state                                               */
+/* ------------------------------------------------------------------ */
+
+typedef struct {
+    uint32_t N;
+    uint32_t Z;
+    uint32_t C;
+    uint32_t V;
+} Apsr;
+
+typedef struct Context {
+    Apsr apsr;
+    uint32_t fpscr;
+    uint32_t istate;
+    uint32_t sideeffect;
+    void *user_data;
+    uint32_t (*mem_a_read_hook)(struct Context *ctx, uint32_t address, uint32_t size);
+    void (*mem_a_write_hook)(struct Context *ctx, uint32_t address, uint32_t size, uint32_t value);
+    uint32_t (*mem_u_read_hook)(struct Context *ctx, uint32_t address, uint32_t size);
+    void (*mem_u_write_hook)(struct Context *ctx, uint32_t address, uint32_t size, uint32_t value);
+} Context;
+
+static inline bool ConditionPassed(void) {
+    return true;
+}
+
+static inline bool Consistent(uint32_t reg) {
+    (void)reg;
+    return true;
+}
+
+static inline void EncodingSpecificOperations(void) {}
+
+static inline void LoadWritePC(uint32_t value) {
+    (void)value;
+}
+
+static inline uint32_t MemA_read(Context *ctx, uint32_t address, uint32_t size) {
+    if (ctx->mem_a_read_hook) return ctx->mem_a_read_hook(ctx, address, size);
+    return 0;
+}
+
+static inline void MemA_write(Context *ctx, uint32_t address, uint32_t size,
+                              uint32_t value) {
+    if (ctx->mem_a_write_hook) ctx->mem_a_write_hook(ctx, address, size, value);
+}
+
+static inline uint32_t MemU_read(Context *ctx, uint32_t address, uint32_t size) {
+    if (ctx->mem_u_read_hook) return ctx->mem_u_read_hook(ctx, address, size);
+    return 0;
+}
+
+static inline void MemU_write(Context *ctx, uint32_t address, uint32_t size,
+                              uint32_t value) {
+    if (ctx->mem_u_write_hook) ctx->mem_u_write_hook(ctx, address, size, value);
+}
+
+/* ------------------------------------------------------------------ */
+/*  IT block helpers                                                  */
+/* ------------------------------------------------------------------ */
+
+static inline bool InITBlock(Context *ctx) {
+    return (ctx->istate & 0xFu) != 0u;
+}
+
+static inline bool LastInITBlock(Context *ctx) {
+    return (ctx->istate & 0xFu) == 0x8u;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Side-effect bitfield                                              */
+/* ------------------------------------------------------------------ */
+
+#define SIDEFFECT_NONE          0u
+#define SIDEFFECT_UNPREDICTABLE (1u << 0)
+#define SIDEFFECT_UNDEFINED     (1u << 1)
+#define SIDEFFECT_SEE           (1u << 2)
+
+/* ------------------------------------------------------------------ */
+/*  Shift type constants                                              */
+/* ------------------------------------------------------------------ */
+
+#define SRType_None 0u
+#define SRType_LSL 1u
+#define SRType_LSR 2u
+#define SRType_ASR 3u
+#define SRType_ROR 4u
+#define SRType_RRX 5u
+
+/* ------------------------------------------------------------------ */
+/*  Shift helpers                                                     */
+/* ------------------------------------------------------------------ */
+
+/* tuple[uint32_t, uint32_t] */
+static inline Tuple2Ret DecodeImmShift(uint32_t type, uint32_t imm5) {
+    if (type == 0x0u) return (Tuple2Ret){(int)SRType_LSL, (int)imm5};
+    if (type == 0x1u) return (Tuple2Ret){(int)SRType_LSR,
+                                          (int)(imm5 == 0u ? 32u : imm5)};
+    if (type == 0x2u) return (Tuple2Ret){(int)SRType_ASR,
+                                          (int)(imm5 == 0u ? 32u : imm5)};
+    if (imm5 == 0u) return (Tuple2Ret){(int)SRType_RRX, 1};
+    return (Tuple2Ret){(int)SRType_ROR, (int)imm5};
+}
+
+static inline uint32_t Shift(uint32_t value, uint32_t shift_t,
+                           uint32_t shift_n, uint32_t carry_in) {
+    (void)carry_in;
+    return value;
+}
+
+/* tuple[uint32_t, uint32_t] */
+static inline Tuple2Ret Shift_C(uint32_t reg, uint32_t shift_t,
+                                uint32_t shift_n, uint32_t old_carry) {
+    (void)reg;
+    (void)shift_t;
+    (void)shift_n;
+    (void)old_carry;
+    return (Tuple2Ret){0, 0};
+}
+
+/* ------------------------------------------------------------------ */
+/*  Thumb expand with carry                                           */
+/* ------------------------------------------------------------------ */
+
+/* tuple[uint32_t, uint32_t] */
+static inline Tuple2Ret ThumbExpandImm_C(Context *ctx, uint32_t val,
+                                         uint32_t carry_in) {
+    uint32_t imm32;
+    uint32_t carry_out;
+    if (((val >> 10) & 0x3u) == 0x0u) {
+        uint32_t control = (val >> 8) & 0x3u;
+        uint32_t imm8 = val & 0xFFu;
+        if (control == 0x0u) {
+            imm32 = imm8;
+        } else if (control == 0x1u) {
+            if (imm8 == 0u) { ctx->sideeffect |= SIDEFFECT_UNPREDICTABLE; }
+            imm32 = (imm8 << 16) | imm8;
+        } else if (control == 0x2u) {
+            if (imm8 == 0u) { ctx->sideeffect |= SIDEFFECT_UNPREDICTABLE; }
+            imm32 = (imm8 << 24) | (imm8 << 8);
+        } else {
+            if (imm8 == 0u) { ctx->sideeffect |= SIDEFFECT_UNPREDICTABLE; }
+            imm32 = (imm8 << 24) | (imm8 << 16) | (imm8 << 8) | imm8;
+        }
+        carry_out = carry_in;
+    } else {
+        uint32_t unrotated = (1u << 7) | (val & 0x7Fu);
+        uint32_t shift = (val >> 7) & 0x1Fu;
+        imm32 = ((unrotated >> shift) | (unrotated << (32u - shift)))
+                & 0xFFFFFFFFu;
+        carry_out = (imm32 >> 31) & 0x1u;
+    }
+    return (Tuple2Ret){(int)imm32, (int)carry_out};
+}
+
+static inline uint32_t ThumbExpandImm(Context *ctx, uint32_t x) {
+    return ThumbExpandImm_C(ctx, x, 0).f0;
+}
+
+static inline uint32_t VFPExpandImm(uint32_t imm8, uint32_t N) {
+    (void)N;
+    return imm8;
+}
+
+static inline bool VFPSmallRegisterBank(void) {
+    return false;
+}
+
+/* ------------------------------------------------------------------ */
+/*  VFP negate-multiply type                                          */
+/* ------------------------------------------------------------------ */
+
+#define VFPNegMul_VNMLA 0u
+#define VFPNegMul_VNMLS 1u
+#define VFPNegMul_VNMUL 2u

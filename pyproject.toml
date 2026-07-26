@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/arm_transpiller"]
+
+[project]
+name = "arm-transpiller"
+version = "0.1.0"
+description = "Transpile ARM Architecture Reference Manual pseudocode into C or Python"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.4.2",
+    "lark>=1.2.0",
+]
+
+[project.scripts]
+arm-transpiller = "arm_transpiller.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.9.0",
+    "mypy>=1.14.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "c_compile: tests that compile generated C code with gcc (requires gcc)",
+]

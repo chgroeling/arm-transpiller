@@ -1,0 +1,3 @@
+d = UInt(Rd); n = UInt(Rn); setflags = (S == '1');
+imm32 = ThumbExpandImm(i:imm3:imm8);
+if d IN {13,15} || n IN {13,15} then UNPREDICTABLE;

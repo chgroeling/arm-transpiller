@@ -1,0 +1,4 @@
+dp_operation = (sz == '1');
+rmode = if op == '1' then '11' else FPSCR<23:22>;
+d = if dp_operation then UInt(D:Vd) else UInt(Vd:D);
+m = if dp_operation then UInt(M:Vm) else UInt(Vm:M);

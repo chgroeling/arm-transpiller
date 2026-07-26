@@ -1,0 +1,2 @@
+d = UInt(Rdn); n = UInt(Rdn); m = UInt(Rm); setflags = !InITBlock();
+(shift_t, shift_n) = (SRType_LSL, 0);

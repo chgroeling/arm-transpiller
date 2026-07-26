@@ -1,0 +1,231 @@
+# ruff: noqa: N802
+
+
+# --- Tuple2Ret not needed in Python (native tuples used) ---
+
+
+# --- Bit manipulation builtins ---
+
+def UInt(x: int) -> int:
+    return x & 0xFFFFFFFF
+
+
+def Zeros(n: int) -> int:
+    return 0
+
+
+def Ones(n: int) -> int:
+    return (1 << n) - 1
+
+
+def Replicate(x: int, n: int, width: int) -> int:
+    result = 0
+    for i in range(n):
+        result = (result << width) | x
+    return result
+
+
+def concat_bits(left: int, right: int, right_width: int) -> int:
+    return (left << right_width) | (right & ((1 << right_width) - 1))
+
+
+def BitCount(x: int) -> int:
+    return x.bit_count()
+
+
+def IsZeroBit(x: int) -> bool:
+    return x == 0
+
+
+# --- Sign/zero extension ---
+
+def SignExtend(x: int, src_width: int) -> int:
+    v = int(x) & ((1 << src_width) - 1)
+    if v & (1 << (src_width - 1)):
+        v -= 1 << src_width
+    return v
+
+
+def ZeroExtend(x: int, n: int) -> int:
+    mask = (1 << n) - 1
+    return x & mask
+
+
+def SInt(x: int, n: int = 32) -> int:
+    sign_bit = 1 << (n - 1)
+    if x & sign_bit:
+        return x - (1 << n)
+    return x
+
+
+# --- Alignment ---
+
+def Align(x: int, alignment: int) -> int:
+    return x & ~(alignment - 1)
+
+
+# --- Architectural state ---
+
+class Apsr:
+    def __init__(self) -> None:
+        self.N = 0
+        self.Z = 0
+        self.C = 0
+        self.V = 0
+
+
+class Context:
+    def __init__(self) -> None:
+        self.apsr = Apsr()
+        self.fpscr = 0
+        self.istate = 0
+        self.sideeffect = 0
+        self.user_data = None
+        self.mem_a_read_hook = lambda ctx, addr, size: 0
+        self.mem_a_write_hook = lambda ctx, addr, size, value: None
+        self.mem_u_read_hook = lambda ctx, addr, size: 0
+        self.mem_u_write_hook = lambda ctx, addr, size, value: None
+
+
+def ConditionPassed() -> bool:
+    return True
+
+
+def Consistent(reg: int) -> bool:
+    return True
+
+
+def EncodingSpecificOperations() -> None:
+    pass
+
+
+def LoadWritePC(value: int) -> None:
+    pass
+
+
+def MemA_read(ctx: Context, address: int, size: int) -> int:
+    return ctx.mem_a_read_hook(ctx, address, size)
+
+
+def MemA_write(
+    ctx: Context, address: int, size: int, value: int
+) -> None:
+    ctx.mem_a_write_hook(ctx, address, size, value)
+
+
+def MemU_read(ctx: Context, address: int, size: int) -> int:
+    return ctx.mem_u_read_hook(ctx, address, size)
+
+
+def MemU_write(
+    ctx: Context, address: int, size: int, value: int
+) -> None:
+    ctx.mem_u_write_hook(ctx, address, size, value)
+
+
+# --- IT block helpers ---
+
+def InITBlock(ctx: Context) -> bool:
+    return (ctx.istate & 0b1111) != 0
+
+
+def LastInITBlock(ctx: Context) -> bool:
+    return (ctx.istate & 0b1111) == 0b1000
+
+
+# --- Side-effect bitfield ---
+
+SIDEFFECT_NONE = 0
+SIDEFFECT_UNPREDICTABLE = 1 << 0
+SIDEFFECT_UNDEFINED = 1 << 1
+SIDEFFECT_SEE = 1 << 2
+
+
+# --- Shift type constants ---
+
+SRType_None = 0
+SRType_LSL = 1
+SRType_LSR = 2
+SRType_ASR = 3
+SRType_ROR = 4
+SRType_RRX = 5
+
+
+# --- Shift helpers ---
+
+def DecodeImmShift(type_val: int, imm: int) -> tuple[int, int]:
+    type_val = int(type_val)
+    imm = int(imm)
+    if type_val == 0b00:
+        return (SRType_LSL, imm)
+    if type_val == 0b01:
+        return (SRType_LSR, 32 if imm == 0 else imm)
+    if type_val == 0b10:
+        return (SRType_ASR, 32 if imm == 0 else imm)
+    if imm == 0:
+        return (SRType_RRX, 1)
+    return (SRType_ROR, imm)
+
+
+def Shift(
+    value: int, shift_t: int, shift_n: int, carry_in: int
+) -> int:
+    return value
+
+
+def Shift_C(
+    reg: int, shift_t: int, shift_n: int, old_carry: int
+) -> tuple[int, int]:
+    return (0, 0)
+
+
+# --- Thumb expand with carry ---
+
+def ThumbExpandImm_C(
+    ctx: Context, val: int, carry_in: int
+) -> tuple[int, int]:
+    val = int(val)
+    if (val >> 10) & 0b11 == 0b00:
+        control = (val >> 8) & 0b11
+        imm8 = val & 0xFF
+        if control == 0b00:
+            imm32 = imm8
+        elif control == 0b01:
+            if imm8 == 0:
+                ctx.sideeffect |= SIDEFFECT_UNPREDICTABLE
+            imm32 = (imm8 << 16) | imm8
+        elif control == 0b10:
+            if imm8 == 0:
+                ctx.sideeffect |= SIDEFFECT_UNPREDICTABLE
+            imm32 = (imm8 << 24) | (imm8 << 8)
+        else:
+            if imm8 == 0:
+                ctx.sideeffect |= SIDEFFECT_UNPREDICTABLE
+            imm32 = (imm8 << 24) | (imm8 << 16) | (imm8 << 8) | imm8
+        carry_out = carry_in
+    else:
+        unrotated = (1 << 7) | (val & 0x7F)
+        shift = (val >> 7) & 0x1F
+        imm32 = ((unrotated >> shift) | (unrotated << (32 - shift))) & 0xFFFFFFFF
+        carry_out = (imm32 >> 31) & 1
+    return (imm32, carry_out)
+
+
+def ThumbExpandImm(ctx: Context, imm: int) -> int:
+    return ThumbExpandImm_C(ctx, imm, 0)[0]
+
+
+def VFPExpandImm(imm8: int, N: int) -> int:
+    return imm8
+
+
+# --- VFP negate-multiply type ---
+
+VFPNegMul_VNMLA = 0
+VFPNegMul_VNMLS = 1
+VFPNegMul_VNMUL = 2
+
+
+def VFPSmallRegisterBank() -> bool:
+    return False
+

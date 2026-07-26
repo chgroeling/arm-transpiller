@@ -1,0 +1,2 @@
+d = UInt(Rd); m = UInt(Rm); setflags = !InITBlock();
+(-, shift_n) = DecodeImmShift('01', imm5);
