@@ -555,6 +555,24 @@ def test_infer_types_of_mvn_register_op() -> None:
     assert types["result"] == "bits32"
 
 
+def test_infer_types_of_ssat_t1_decoder() -> None:
+    program = parse((FIXTURES / "ssat_t1_decoder.pseudo").read_text())
+    types = {name: str(t) for name, t in infer_types(program).items()}
+    assert types == {
+        "Rd": "bits4",
+        "Rn": "bits4",
+        "d": "uint32",
+        "imm2": "bits2",
+        "imm3": "bits3",
+        "n": "uint32",
+        "sat_imm": "bits5",
+        "saturate_to": "uint32",
+        "sh": "bits1",
+        "shift_n": "bits6",
+        "shift_t": "bits3",
+    }
+
+
 # --- JSON extraction ---
 
 

@@ -2255,3 +2255,117 @@ def test_extract_input_variables_vmov_immediate_t1() -> None:
     source = (FIXTURES / "vmov_immediate_t1_decoder.pseudo").read_text()
     result = _extract_input(source)
     assert result == ["D", "Vd", "imm4H", "imm4L", "sz"]
+
+
+# --- SSAT (T1) ---
+
+
+def test_parse_ssat_t1_decoder() -> None:
+    from arm_transpiller.ast_nodes import (
+        Assignment,
+        BinaryOp,
+        BitLiteral,
+        BitStringLiteral,
+        DestructureAssignment,
+        FunctionCall,
+        Identifier,
+        IfThen,
+        IntegerLiteral,
+        SeeStmt,
+        Undefined,
+        Unpredictable,
+    )
+
+    source = (FIXTURES / "ssat_t1_decoder.pseudo").read_text()
+    program = parse(source)
+
+    assert isinstance(program, Program)
+    assert len(program.statements) == 6
+
+    s0: IfThen = program.statements[0]
+    assert isinstance(s0, IfThen)
+    assert isinstance(s0.condition, BinaryOp)
+    assert s0.condition.op == "&&"
+    assert isinstance(s0.condition.left, BinaryOp)
+    assert s0.condition.left.op == "=="
+    assert isinstance(s0.condition.left.left, Identifier)
+    assert s0.condition.left.left.name == "sh"
+    assert isinstance(s0.condition.left.right, BitLiteral)
+    assert s0.condition.left.right.value == 1
+    assert isinstance(s0.condition.right, BinaryOp)
+    assert s0.condition.right.op == "=="
+    assert isinstance(s0.condition.right.right, BitStringLiteral)
+    assert s0.condition.right.right.value == "00000"
+    assert len(s0.then_body) == 1
+
+    inner: IfThen = s0.then_body[0]
+    assert isinstance(inner, IfThen)
+    assert isinstance(inner.condition, FunctionCall)
+    assert inner.condition.name == "HaveDSPExt"
+    assert len(inner.then_body) == 1
+    assert isinstance(inner.then_body[0], SeeStmt)
+    assert inner.then_body[0].instruction == "SSAT16"
+    assert len(inner.else_body) == 1
+    assert isinstance(inner.else_body[0], Undefined)
+
+    s1: Assignment = program.statements[1]
+    assert isinstance(s1, Assignment)
+    assert s1.target == "d"
+    assert isinstance(s1.value, FunctionCall)
+    assert s1.value.name == "UInt"
+    assert isinstance(s1.value.args[0], Identifier)
+    assert s1.value.args[0].name == "Rd"
+
+    s2: Assignment = program.statements[2]
+    assert isinstance(s2, Assignment)
+    assert s2.target == "n"
+    assert isinstance(s2.value, FunctionCall)
+    assert s2.value.name == "UInt"
+    assert isinstance(s2.value.args[0], Identifier)
+    assert s2.value.args[0].name == "Rn"
+
+    s3: Assignment = program.statements[3]
+    assert isinstance(s3, Assignment)
+    assert s3.target == "saturate_to"
+    assert isinstance(s3.value, BinaryOp)
+    assert s3.value.op == "+"
+    assert isinstance(s3.value.left, FunctionCall)
+    assert s3.value.left.name == "UInt"
+    assert isinstance(s3.value.left.args[0], Identifier)
+    assert s3.value.left.args[0].name == "sat_imm"
+    assert isinstance(s3.value.right, IntegerLiteral)
+    assert s3.value.right.value == 1
+
+    s4: DestructureAssignment = program.statements[4]
+    assert isinstance(s4, DestructureAssignment)
+    assert s4.targets == ["shift_t", "shift_n"]
+    assert isinstance(s4.value, FunctionCall)
+    assert s4.value.name == "DecodeImmShift"
+    assert len(s4.value.args) == 2
+    assert isinstance(s4.value.args[0], BinaryOp)
+    assert s4.value.args[0].op == ":"
+    assert isinstance(s4.value.args[0].left, Identifier)
+    assert s4.value.args[0].left.name == "sh"
+    assert isinstance(s4.value.args[0].right, BitLiteral)
+    assert s4.value.args[0].right.value == 0
+    assert isinstance(s4.value.args[1], BinaryOp)
+    assert s4.value.args[1].op == ":"
+
+    s5: IfThen = program.statements[5]
+    assert isinstance(s5, IfThen)
+    assert isinstance(s5.condition, BinaryOp)
+    assert s5.condition.op == "||"
+    assert len(s5.then_body) == 1
+    assert isinstance(s5.then_body[0], Unpredictable)
+
+
+def test_extract_output_variables_ssat_t1() -> None:
+    source = (FIXTURES / "ssat_t1_decoder.pseudo").read_text()
+    result = _extract_output(source)
+    assert result == ["d", "n", "saturate_to", "shift_t", "shift_n"]
+
+
+def test_extract_input_variables_ssat_t1() -> None:
+    source = (FIXTURES / "ssat_t1_decoder.pseudo").read_text()
+    result = _extract_input(source)
+    assert result == ["Rd", "Rn", "imm2", "imm3", "sat_imm", "sh"]

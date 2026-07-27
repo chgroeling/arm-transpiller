@@ -133,6 +133,11 @@ def LastInITBlock(ctx: Context) -> bool:
     return (ctx.istate & 0b1111) == 0b1000
 
 
+def HaveDSPExt() -> bool:
+    """ARM DSP Extension presence — stub: return False for now."""
+    return False
+
+
 # --- Side-effect bitfield ---
 
 SIDEFFECT_NONE = 0

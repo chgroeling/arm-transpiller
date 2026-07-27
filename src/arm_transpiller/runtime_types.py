@@ -51,6 +51,8 @@ _RUNTIME_RETURN_TYPES: Mapping[str, ArmType] = MappingProxyType(
         # VFP
         "VFPExpandImm": bits(32),
         "VFPSmallRegisterBank": BOOL,
+        # DSP
+        "HaveDSPExt": BOOL,
     }
 )
 

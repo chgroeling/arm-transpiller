@@ -148,6 +148,11 @@ static inline bool LastInITBlock(Context *ctx) {
     return (ctx->istate & 0xFu) == 0x8u;
 }
 
+static inline bool HaveDSPExt(void) {
+    /* ARM DSP Extension presence — stub: return false for now */
+    return false;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Side-effect bitfield                                              */
 /* ------------------------------------------------------------------ */

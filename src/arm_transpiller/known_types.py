@@ -246,6 +246,8 @@ _KNOWN_TYPES: dict[str, ArmType] = {
     "SYSm": bits(8),
     "imm4H": bits(4),
     "imm4L": bits(4),
+    "sat_imm": bits(5),
+    "sh": bits(1),
     "registers": bits(16),
     "rotation": bits(4),
     # Architectural registers

@@ -1359,3 +1359,57 @@ def test_python_vmov_immediate_t1_compiles() -> None:
     ns: dict[str, object] = {}
     exec(_ARMLIB_PY + _VMOV_IMM_T1_PREAMBLE, ns)
     exec(code, ns)
+
+
+# --- SSAT (T1) ---
+
+SSAT_T1_SOURCE = (FIXTURES / "ssat_t1_decoder.pseudo").read_text()
+
+EXPECTED_SSAT_T1_PY = (
+    "if ((sh == 1) and (concat_bits(imm3, imm2, 2) == 0x0)):\n"
+    "    if HaveDSPExt():\n"
+    '        ctx.sideeffect |= SIDEFFECT_SEE  # "SSAT16"\n'
+    "    else:\n"
+    "        ctx.sideeffect |= SIDEFFECT_UNDEFINED\n"
+    "d = UInt(Rd)\n"
+    "n = UInt(Rn)\n"
+    "saturate_to = (UInt(sat_imm) + 1)\n"
+    "shift_t, shift_n = DecodeImmShift(concat_bits(sh, 0, 1), "
+    "concat_bits(imm3, imm2, 2))\n"
+    "if (((d == 13) or (d == 15)) or ((n == 13) or (n == 15))):\n"
+    "    ctx.sideeffect |= SIDEFFECT_UNPREDICTABLE\n"
+)
+
+
+def test_python_ssat_t1_decoder() -> None:
+    program = parse(SSAT_T1_SOURCE)
+    gen = PythonGenerator()
+    output = gen.generate(program)
+    assert output == EXPECTED_SSAT_T1_PY
+
+
+_SSAT_T1_PREAMBLE = """\
+d = 0
+n = 0
+Rd = 0
+Rn = 0
+sat_imm = 0
+saturate_to = 0
+sh = 0
+imm3 = 0
+imm2 = 0
+shift_t = 0
+shift_n = 0
+
+ctx = Context()
+"""
+
+
+def test_python_ssat_t1_compiles() -> None:
+    program = parse(SSAT_T1_SOURCE)
+    gen = PythonGenerator()
+    code = gen.generate(program)
+
+    ns: dict[str, object] = {}
+    exec(_ARMLIB_PY + _SSAT_T1_PREAMBLE, ns)
+    exec(code, ns)

@@ -1409,3 +1409,55 @@ def test_c_vmov_immediate_t1_compiles() -> None:
     gen = CGenerator()
     body = gen.generate(program)
     _compile_and_run(_ARMLIB_H + _VMOV_IMM_T1_MAIN + body + _C_POSTAMBLE)
+
+
+# --- SSAT (T1) ---
+
+SSAT_T1_SOURCE = (FIXTURES / "ssat_t1_decoder.pseudo").read_text()
+
+EXPECTED_SSAT_T1_C = (
+    "if (((sh == 1) && (concat_bits(imm3, imm2, 2) == 0x0))) {\n"
+    "    if (HaveDSPExt()) {\n"
+    '        ctx->sideeffect |= SIDEFFECT_SEE;  // "SSAT16"\n'
+    "    } else {\n"
+    "        ctx->sideeffect |= SIDEFFECT_UNDEFINED;\n"
+    "    };\n"
+    "};\n"
+    "d = UInt(Rd);\n"
+    "n = UInt(Rn);\n"
+    "saturate_to = (UInt(sat_imm) + 1);\n"
+    "Tuple2Ret tuple_2_ret_1 = DecodeImmShift(concat_bits(sh, 0, 1), "
+    "concat_bits(imm3, imm2, 2));\n"
+    "shift_t = tuple_2_ret_1.f0;\n"
+    "shift_n = tuple_2_ret_1.f1;\n"
+    "if ((((d == 13) || (d == 15)) || ((n == 13) || (n == 15)))) {\n"
+    "    ctx->sideeffect |= SIDEFFECT_UNPREDICTABLE;\n"
+    "};\n"
+)
+
+
+def test_c_ssat_t1_decoder() -> None:
+    program = parse(SSAT_T1_SOURCE)
+    gen = CGenerator()
+    output = gen.generate(program)
+    assert output == EXPECTED_SSAT_T1_C
+
+
+_SSAT_T1_MAIN = """\
+int main(void) {
+    uint32_t R[16] = {0};
+    uint32_t d = 0, n = 0, Rd = 0, Rn = 0, sat_imm = 0, saturate_to = 0;
+    uint32_t sh = 0, imm3 = 0, imm2 = 0;
+    uint32_t shift_t = 0, shift_n = 0;
+    Context _ctx = {0};
+    Context *ctx = &_ctx;
+"""
+
+
+@c_compile
+@pytest.mark.c_compile
+def test_c_ssat_t1_compiles() -> None:
+    program = parse(SSAT_T1_SOURCE)
+    gen = CGenerator()
+    body = gen.generate(program)
+    _compile_and_run(_ARMLIB_H + _SSAT_T1_MAIN + body + _C_POSTAMBLE)
