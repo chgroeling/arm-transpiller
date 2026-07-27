@@ -6,6 +6,7 @@
 
 # --- Bit manipulation builtins ---
 
+
 def UInt(x: int) -> int:
     return x & 0xFFFFFFFF
 
@@ -39,6 +40,7 @@ def IsZeroBit(x: int) -> bool:
 
 # --- Sign/zero extension ---
 
+
 def SignExtend(x: int, src_width: int) -> int:
     v = int(x) & ((1 << src_width) - 1)
     if v & (1 << (src_width - 1)):
@@ -60,11 +62,13 @@ def SInt(x: int, n: int = 32) -> int:
 
 # --- Alignment ---
 
+
 def Align(x: int, alignment: int) -> int:
     return x & ~(alignment - 1)
 
 
 # --- Architectural state ---
+
 
 class Apsr:
     def __init__(self) -> None:
@@ -107,9 +111,7 @@ def MemA_read(ctx: Context, address: int, size: int) -> int:
     return ctx.mem_a_read_hook(ctx, address, size)
 
 
-def MemA_write(
-    ctx: Context, address: int, size: int, value: int
-) -> None:
+def MemA_write(ctx: Context, address: int, size: int, value: int) -> None:
     ctx.mem_a_write_hook(ctx, address, size, value)
 
 
@@ -117,13 +119,12 @@ def MemU_read(ctx: Context, address: int, size: int) -> int:
     return ctx.mem_u_read_hook(ctx, address, size)
 
 
-def MemU_write(
-    ctx: Context, address: int, size: int, value: int
-) -> None:
+def MemU_write(ctx: Context, address: int, size: int, value: int) -> None:
     ctx.mem_u_write_hook(ctx, address, size, value)
 
 
 # --- IT block helpers ---
+
 
 def InITBlock(ctx: Context) -> bool:
     return (ctx.istate & 0b1111) != 0
@@ -158,6 +159,7 @@ SRType_RRX = 5
 
 # --- Shift helpers ---
 
+
 def DecodeImmShift(type_val: int, imm: int) -> tuple[int, int]:
     type_val = int(type_val)
     imm = int(imm)
@@ -172,23 +174,18 @@ def DecodeImmShift(type_val: int, imm: int) -> tuple[int, int]:
     return (SRType_ROR, imm)
 
 
-def Shift(
-    value: int, shift_t: int, shift_n: int, carry_in: int
-) -> int:
+def Shift(value: int, shift_t: int, shift_n: int, carry_in: int) -> int:
     return value
 
 
-def Shift_C(
-    reg: int, shift_t: int, shift_n: int, old_carry: int
-) -> tuple[int, int]:
+def Shift_C(reg: int, shift_t: int, shift_n: int, old_carry: int) -> tuple[int, int]:
     return (0, 0)
 
 
 # --- Thumb expand with carry ---
 
-def ThumbExpandImm_C(
-    ctx: Context, val: int, carry_in: int
-) -> tuple[int, int]:
+
+def ThumbExpandImm_C(ctx: Context, val: int, carry_in: int) -> tuple[int, int]:
     val = int(val)
     if (val >> 10) & 0b11 == 0b00:
         control = (val >> 8) & 0b11
@@ -220,7 +217,7 @@ def ThumbExpandImm(ctx: Context, imm: int) -> int:
     return ThumbExpandImm_C(ctx, imm, 0)[0]
 
 
-def VFPExpandImm(imm8: int, N: int) -> int:
+def VFPExpandImm(imm8: int, n: int) -> int:
     return imm8
 
 
@@ -233,4 +230,3 @@ VFPNegMul_VNMUL = 2
 
 def VFPSmallRegisterBank() -> bool:
     return False
-

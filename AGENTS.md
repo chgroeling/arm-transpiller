@@ -23,6 +23,10 @@ uv run ruff format --check .  # check formatting
 uv run mypy src/           # type check
 ```
 
+The Python runtime template (`src/arm_transpiller/armruntime/armruntime.py.template`)
+is also checked and auto-formatted by Ruff — keep it clean alongside the rest of the
+Python source.
+
 ## Release process
 
 ### Semantic versioning

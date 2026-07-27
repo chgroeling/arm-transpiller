@@ -12,4 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - SSAT T1 decoder test fixture and supporting runtime infrastructure
   (`HaveDSPExt`, `sh`, `sat_imm` types).
 
+### Changed
+
+- Renamed `VFPExpandImm` parameter `N` → `n` in both runtime templates to fix
+  ruff N803 warning.
+
+### Fixed
+
+- Armruntime Python template now passes ruff lint and format checks.
+
 ## [1.0.0] — Initial Release

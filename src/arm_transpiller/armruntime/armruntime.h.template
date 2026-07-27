@@ -243,8 +243,8 @@ static inline uint32_t ThumbExpandImm(Context *ctx, uint32_t x) {
     return ThumbExpandImm_C(ctx, x, 0).f0;
 }
 
-static inline uint32_t VFPExpandImm(uint32_t imm8, uint32_t N) {
-    (void)N;
+static inline uint32_t VFPExpandImm(uint32_t imm8, uint32_t n) {
+    (void)n;
     return imm8;
 }
 
