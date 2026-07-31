@@ -83,7 +83,6 @@ class Context:
         self.apsr = Apsr()
         self.fpscr = 0
         self.istate = 0
-        self.sideeffect = 0
         self.user_data = None
         self.mem_a_read_hook = lambda ctx, addr, size: 0
         self.mem_a_write_hook = lambda ctx, addr, size, value: None
@@ -185,7 +184,7 @@ def Shift_C(reg: int, shift_t: int, shift_n: int, old_carry: int) -> tuple[int, 
 # --- Thumb expand with carry ---
 
 
-def ThumbExpandImm_C(ctx: Context, val: int, carry_in: int) -> tuple[int, int]:
+def ThumbExpandImm_C(sideffects: int, val: int, carry_in: int) -> tuple[int, int]:
     val = int(val)
     if (val >> 10) & 0b11 == 0b00:
         control = (val >> 8) & 0b11
@@ -194,15 +193,15 @@ def ThumbExpandImm_C(ctx: Context, val: int, carry_in: int) -> tuple[int, int]:
             imm32 = imm8
         elif control == 0b01:
             if imm8 == 0:
-                ctx.sideeffect |= SIDEFFECT_UNPREDICTABLE
+                sideffects |= SIDEFFECT_UNPREDICTABLE
             imm32 = (imm8 << 16) | imm8
         elif control == 0b10:
             if imm8 == 0:
-                ctx.sideeffect |= SIDEFFECT_UNPREDICTABLE
+                sideffects |= SIDEFFECT_UNPREDICTABLE
             imm32 = (imm8 << 24) | (imm8 << 8)
         else:
             if imm8 == 0:
-                ctx.sideeffect |= SIDEFFECT_UNPREDICTABLE
+                sideffects |= SIDEFFECT_UNPREDICTABLE
             imm32 = (imm8 << 24) | (imm8 << 16) | (imm8 << 8) | imm8
         carry_out = carry_in
     else:
@@ -213,8 +212,8 @@ def ThumbExpandImm_C(ctx: Context, val: int, carry_in: int) -> tuple[int, int]:
     return (imm32, carry_out)
 
 
-def ThumbExpandImm(ctx: Context, imm: int) -> int:
-    return ThumbExpandImm_C(ctx, imm, 0)[0]
+def ThumbExpandImm(sideffects: int, imm: int) -> int:
+    return ThumbExpandImm_C(sideffects, imm, 0)[0]
 
 
 def VFPExpandImm(imm8: int, n: int) -> int:

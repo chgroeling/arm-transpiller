@@ -7,8 +7,8 @@ The ARM manual defines instruction decode and operation behaviour in a domain‑
 ```text
 in   (pseudocode)   if d IN {13,15} then UNDEFINED;
 
-out  --target c      if (((d == 13) || (d == 15))) { UNDEFINED(ctx); };
-out  --target python  if (d in (13, 15)): UNDEFINED(ctx)
+out  --target c      if (((d == 13) || (d == 15))) { sideffects |= SIDEFFECT_UNDEFINED; };
+out  --target python  if (d in (13, 15)): sideffects |= SIDEFFECT_UNDEFINED
 ```
 
 ---
@@ -66,9 +66,9 @@ if d IN {13,15} || n IN {13,15} then UNPREDICTABLE;
 
 ```c
 d = UInt(Rd);
-imm32 = ThumbExpandImm(ctx, concat_bits(concat_bits(i, imm3, 3), imm8, 8));
+imm32 = ThumbExpandImm(&sideffects, concat_bits(concat_bits(i, imm3, 3), imm8, 8));
 if ((((d == 13) || (d == 15)) || ((n == 13) || (n == 15)))) {
-    UNPREDICTABLE(ctx);
+    sideffects |= SIDEFFECT_UNPREDICTABLE;
 };
 ```
 
@@ -76,9 +76,9 @@ if ((((d == 13) || (d == 15)) || ((n == 13) || (n == 15)))) {
 
 ```python
 d = UInt(Rd)
-imm32 = ThumbExpandImm(ctx, concat_bits(concat_bits(i, imm3, 3), imm8, 8))
+imm32 = ThumbExpandImm(sideffects, concat_bits(concat_bits(i, imm3, 3), imm8, 8))
 if ((d in (13, 15)) or (n in (13, 15))):
-    UNPREDICTABLE(ctx)
+    sideffects |= SIDEFFECT_UNPREDICTABLE
 ```
 
 ---
@@ -534,16 +534,31 @@ Error: Cannot determine the type of 'a'. Add it to known_types.py (exact match o
 
 ## Runtime model
 
-Generated code calls into a small runtime library that emulates ARM pseudocode primitives (`UInt`, `SInt`, `ThumbExpandImm`, `SignExtend`, …). Side‑effecting statements operate through a `Context` object:
+Generated code calls into a small runtime library that emulates ARM pseudocode primitives (`UInt`, `SInt`, `ThumbExpandImm`, `SignExtend`, …). Side‑effecting statements operate on a standalone `sideffects` variable and architectural state through a `Context` object. Both must be provided by the caller:
 
 | Mechanism                | Behaviour                                                                                                                |
 |--------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| **Architectural state**  | `apsr` (N/Z/C/V flags), `istate` (IT‑block state), `sideeffect` bitfield                                                 |
+| **Architectural state**  | `apsr` (N/Z/C/V flags), `istate` (IT‑block state)                                                                        |
 | **Side‑effects**         | `UNPREDICTABLE` sets `SIDEFFECT_UNPREDICTABLE`; `UNDEFINED` sets `SIDEFFECT_UNDEFINED`; `SEE` sets `SIDEFFECT_SEE`       |
 | **Side‑effect detection**| `extract_side_effects(program)` walks the AST and detects side‑effects statically (no compilation needed)              |
 | **Memory hooks**         | `MemA_read`/`MemA_write` (aligned) use `mem_a_read_hook`/`mem_a_write_hook`; `MemU_read`/`MemU_write` (unaligned) use `mem_u_read_hook`/`mem_u_write_hook` |
 | **User data**            | `ctx.user_data` — attach arbitrary per‑context state                                                                     |
 | **Return types**         | Each runtime function is annotated with the ARM type it produces — Python annotations, C `typedef`s (`bits32`, `uint32`, `sint32`, …); type inference reads the Python ones (see [Type system](#type-system)) |
+
+### Caller contract
+
+Before invoking transpiled code, the caller must provide:
+
+- **`sideffects`** — a zero‑initialised side‑effect variable:
+  - **C:** `uint32_t sideffects = 0;`
+  - **Python:** `sideffects = 0`
+- **`Context`** — a context object holding architectural state:
+  - **C:** `Context _ctx = {0}; Context *ctx = &_ctx;`
+  - **Python:** `ctx = Context()`
+
+The transpiled code reads and writes `sideffects` and `ctx` directly.  Any called code
+(e.g. the runtime library functions `ThumbExpandImm` / `ThumbExpandImm_C`) also takes
+`sideffects` as an explicit argument.
 
 ---
 
