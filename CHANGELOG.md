@@ -5,22 +5,6 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
-
-### Added
-
-### Changed
-
-### Removed
-
-### Fixed
-
-## [1.1.1] — 2026-07-27
-
-### Fixed
-
-- `pyproject.toml` version was not bumped in the 1.1.0 release.
-
 ## [1.1.0] — 2026-07-27
 
 ### Added
