@@ -156,6 +156,8 @@ static inline bool HaveDSPExt(void) {
 /*  Side-effect bitfield                                              */
 /* ------------------------------------------------------------------ */
 
+typedef uint32_t SideffectFlags;
+
 #define SIDEFFECT_NONE          0u
 #define SIDEFFECT_UNPREDICTABLE (1u << 0)
 #define SIDEFFECT_UNDEFINED     (1u << 1)
@@ -208,7 +210,7 @@ static inline Tuple2Ret Shift_C(uint32_t reg, uint32_t shift_t,
 /* ------------------------------------------------------------------ */
 
 /* tuple[uint32_t, uint32_t] */
-static inline Tuple2Ret ThumbExpandImm_C(uint32_t *sideffects, uint32_t val,
+static inline Tuple2Ret ThumbExpandImm_C(SideffectFlags *sideffect_flags, uint32_t val,
                                          uint32_t carry_in) {
     uint32_t imm32;
     uint32_t carry_out;
@@ -218,13 +220,13 @@ static inline Tuple2Ret ThumbExpandImm_C(uint32_t *sideffects, uint32_t val,
         if (control == 0x0u) {
             imm32 = imm8;
         } else if (control == 0x1u) {
-            if (imm8 == 0u) { *sideffects |= SIDEFFECT_UNPREDICTABLE; }
+            if (imm8 == 0u) { *sideffect_flags |= SIDEFFECT_UNPREDICTABLE; }
             imm32 = (imm8 << 16) | imm8;
         } else if (control == 0x2u) {
-            if (imm8 == 0u) { *sideffects |= SIDEFFECT_UNPREDICTABLE; }
+            if (imm8 == 0u) { *sideffect_flags |= SIDEFFECT_UNPREDICTABLE; }
             imm32 = (imm8 << 24) | (imm8 << 8);
         } else {
-            if (imm8 == 0u) { *sideffects |= SIDEFFECT_UNPREDICTABLE; }
+            if (imm8 == 0u) { *sideffect_flags |= SIDEFFECT_UNPREDICTABLE; }
             imm32 = (imm8 << 24) | (imm8 << 16) | (imm8 << 8) | imm8;
         }
         carry_out = carry_in;
@@ -238,8 +240,8 @@ static inline Tuple2Ret ThumbExpandImm_C(uint32_t *sideffects, uint32_t val,
     return (Tuple2Ret){(int)imm32, (int)carry_out};
 }
 
-static inline uint32_t ThumbExpandImm(uint32_t *sideffects, uint32_t x) {
-    return ThumbExpandImm_C(sideffects, x, 0).f0;
+static inline uint32_t ThumbExpandImm(SideffectFlags *sideffect_flags, uint32_t x) {
+    return ThumbExpandImm_C(sideffect_flags, x, 0).f0;
 }
 
 static inline uint32_t VFPExpandImm(uint32_t imm8, uint32_t n) {

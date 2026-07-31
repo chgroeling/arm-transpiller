@@ -124,13 +124,13 @@ class PythonGenerator(CodeGenerator):
             case Comment():
                 return _INDENT * indent + f"# {stmt.text}"
             case Unpredictable():
-                return _INDENT * indent + "sideffects |= SIDEFFECT_UNPREDICTABLE"
+                return _INDENT * indent + "sideffect_flags |= SIDEFFECT_UNPREDICTABLE"
             case Undefined():
-                return _INDENT * indent + "sideffects |= SIDEFFECT_UNDEFINED"
+                return _INDENT * indent + "sideffect_flags |= SIDEFFECT_UNDEFINED"
             case SeeStmt():
                 return (
                     _INDENT * indent
-                    + f'sideffects |= SIDEFFECT_SEE  # "{stmt.instruction}"'
+                    + f'sideffect_flags |= SIDEFFECT_SEE  # "{stmt.instruction}"'
                 )
             case CaseOf():
                 return self._case_of(stmt, indent)
@@ -222,7 +222,7 @@ class PythonGenerator(CodeGenerator):
                     "ThumbExpandImm",
                     "ThumbExpandImm_C",
                 ):
-                    args = ", ".join(["sideffects", *partial])
+                    args = ", ".join(["sideffect_flags", *partial])
                 elif expr.name in (
                     "InITBlock",
                     "LastInITBlock",

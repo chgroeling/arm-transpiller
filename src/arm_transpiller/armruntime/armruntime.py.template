@@ -140,6 +140,8 @@ def HaveDSPExt() -> bool:
 
 # --- Side-effect bitfield ---
 
+SideffectFlags = int
+
 SIDEFFECT_NONE = 0
 SIDEFFECT_UNPREDICTABLE = 1 << 0
 SIDEFFECT_UNDEFINED = 1 << 1
@@ -184,7 +186,7 @@ def Shift_C(reg: int, shift_t: int, shift_n: int, old_carry: int) -> tuple[int, 
 # --- Thumb expand with carry ---
 
 
-def ThumbExpandImm_C(sideffects: int, val: int, carry_in: int) -> tuple[int, int]:
+def ThumbExpandImm_C(sideffect_flags: SideffectFlags, val: int, carry_in: int) -> tuple[int, int]:
     val = int(val)
     if (val >> 10) & 0b11 == 0b00:
         control = (val >> 8) & 0b11
@@ -193,15 +195,15 @@ def ThumbExpandImm_C(sideffects: int, val: int, carry_in: int) -> tuple[int, int
             imm32 = imm8
         elif control == 0b01:
             if imm8 == 0:
-                sideffects |= SIDEFFECT_UNPREDICTABLE
+                sideffect_flags |= SIDEFFECT_UNPREDICTABLE
             imm32 = (imm8 << 16) | imm8
         elif control == 0b10:
             if imm8 == 0:
-                sideffects |= SIDEFFECT_UNPREDICTABLE
+                sideffect_flags |= SIDEFFECT_UNPREDICTABLE
             imm32 = (imm8 << 24) | (imm8 << 8)
         else:
             if imm8 == 0:
-                sideffects |= SIDEFFECT_UNPREDICTABLE
+                sideffect_flags |= SIDEFFECT_UNPREDICTABLE
             imm32 = (imm8 << 24) | (imm8 << 16) | (imm8 << 8) | imm8
         carry_out = carry_in
     else:
@@ -212,8 +214,8 @@ def ThumbExpandImm_C(sideffects: int, val: int, carry_in: int) -> tuple[int, int
     return (imm32, carry_out)
 
 
-def ThumbExpandImm(sideffects: int, imm: int) -> int:
-    return ThumbExpandImm_C(sideffects, imm, 0)[0]
+def ThumbExpandImm(sideffect_flags: SideffectFlags, imm: int) -> int:
+    return ThumbExpandImm_C(sideffect_flags, imm, 0)[0]
 
 
 def VFPExpandImm(imm8: int, n: int) -> int:

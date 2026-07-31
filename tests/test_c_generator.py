@@ -18,9 +18,9 @@ EXPECTED = """\
 d = UInt(Rd);
 n = UInt(Rn);
 setflags = (S == 1);
-imm32 = ThumbExpandImm(&sideffects, concat_bits(concat_bits(i, imm3, 3), imm8, 8));
+imm32 = ThumbExpandImm(&sideffect_flags, concat_bits(concat_bits(i, imm3, 3), imm8, 8));
 if ((((d == 13) || (d == 15)) || ((n == 13) || (n == 15)))) {
-    sideffects |= SIDEFFECT_UNPREDICTABLE;
+    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;
 };
 """
 
@@ -145,7 +145,7 @@ int main(void) {
     bool setflags = false;
     uint32_t i = 0, imm3 = 0, imm8 = 0, imm32 = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -155,7 +155,7 @@ int main(void) {
     uint32_t registers = 0;
     uint32_t address = 0, SP = 0x1000;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -165,7 +165,7 @@ int main(void) {
     uint32_t d = 0, m = 1;
     uint32_t shift_t = 0, shift_n = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
     uint32_t shifted = 0, carry = 0, result = 0;
     bool setflags = true;
@@ -265,7 +265,7 @@ int main(void) {
     bool setflags = false;
     uint32_t shift_n = 0, imm5 = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -291,7 +291,7 @@ EXPECTED_ADC_REG_C = (
     "shift_n = tuple_2_ret_1.f1;\n"
     "if (((((d == 13) || (d == 15)) || ((n == 13) || (n == 15)))"
     " || ((m == 13) || (m == 15)))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -312,7 +312,7 @@ int main(void) {
     uint32_t type = 0, imm3 = 0, imm2 = 0;
     uint32_t shift_t = 0, shift_n = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -352,7 +352,7 @@ int main(void) {
     bool setflags = false;
     uint32_t shift_t = 0, shift_n = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -371,17 +371,17 @@ EOR_SOURCE = (FIXTURES / "eor_immediate_decoder.pseudo").read_text()
 EXPECTED_EOR_C = (
     "// EOR (immediate) — T1 encoding\n"
     "if (((Rd == 0xf) && (S == 1))) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "TEQ (immediate)"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "TEQ (immediate)"\n'
     "};\n"
     "d = UInt(Rd);\n"
     "n = UInt(Rn);\n"
     "setflags = (S == 1);\n"
-    "Tuple2Ret tuple_2_ret_1 = ThumbExpandImm_C(&sideffects, "
+    "Tuple2Ret tuple_2_ret_1 = ThumbExpandImm_C(&sideffect_flags, "
     "concat_bits(concat_bits(i, imm3, 3), imm8, 8), ctx->apsr.C);\n"
     "imm32 = tuple_2_ret_1.f0;\n"
     "carry = tuple_2_ret_1.f1;\n"
     "if ((((d == 13) || ((d == 15) && (S == 0))) || ((n == 13) || (n == 15)))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -400,7 +400,7 @@ int main(void) {
     bool setflags = false;
     uint32_t i = 0, imm3 = 0, imm8 = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
     uint32_t imm32 = 0, carry = 0;
 """
@@ -419,18 +419,18 @@ SUB_IMM_SOURCE = (FIXTURES / "sub_immediate_decoder.pseudo").read_text()
 
 EXPECTED_SUB_IMM_C = (
     "if (((Rd == 0xf) && (S == 1))) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "CMP (immediate)"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "CMP (immediate)"\n'
     "};\n"
     "if ((Rn == 0xd)) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "SUB (SP minus immediate)"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "SUB (SP minus immediate)"\n'
     "};\n"
     "d = UInt(Rd);\n"
     "n = UInt(Rn);\n"
     "setflags = (S == 1);\n"
-    "imm32 = ThumbExpandImm(&sideffects,"
+    "imm32 = ThumbExpandImm(&sideffect_flags,"
     " concat_bits(concat_bits(i, imm3, 3), imm8, 8));\n"
     "if ((((d == 13) || ((d == 15) && (S == 0))) || (n == 15))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -449,7 +449,7 @@ int main(void) {
     bool setflags = false;
     uint32_t i = 0, imm3 = 0, imm8 = 0, imm32 = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -472,7 +472,7 @@ EXPECTED_BL_C = (
     "concat_bits(concat_bits(S, I1, 1), I2, 1), imm10, 10), "
     "imm11, 11), 0, 1), 25);\n"
     "if ((InITBlock(ctx) && (!LastInITBlock(ctx)))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -489,7 +489,7 @@ int main(void) {
     uint32_t J1 = 0, J2 = 0, S = 0, imm10 = 0, imm11 = 0;
     uint32_t I1 = 0, I2 = 0, imm32 = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -507,13 +507,13 @@ B_T3_SOURCE = (FIXTURES / "b_t3_decoder.pseudo").read_text()
 
 EXPECTED_B_T3_C = (
     "if ((((cond >> 1) & 0x7) == 0x7)) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "Related encodings"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "Related encodings"\n'
     "};\n"
     "imm32 = SignExtend(concat_bits(concat_bits(concat_bits("
     "concat_bits(concat_bits(S, J2, 1), J1, 1), imm6, 6), "
     "imm11, 11), 0, 1), 21);\n"
     "if (InITBlock(ctx)) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -530,7 +530,7 @@ int main(void) {
     uint32_t cond = 0, S = 0, J1 = 0, J2 = 0, imm6 = 0, imm11 = 0;
     uint32_t imm32 = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -551,10 +551,10 @@ LDRH_REG_SOURCE = (FIXTURES / "ldrh_register_decoder.pseudo").read_text()
 
 EXPECTED_LDRH_REG_C = (
     "if ((Rn == 0xf)) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "LDRH (literal)"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "LDRH (literal)"\n'
     "};\n"
     "if ((Rt == 0xf)) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "Related instructions"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "Related instructions"\n'
     "};\n"
     "t = UInt(Rt);\n"
     "n = UInt(Rn);\n"
@@ -566,7 +566,7 @@ EXPECTED_LDRH_REG_C = (
     "shift_t = tuple_2_ret_1.f0;\n"
     "shift_n = tuple_2_ret_1.f1;\n"
     "if (((t == 13) || ((m == 13) || (m == 15)))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -586,7 +586,7 @@ int main(void) {
     uint32_t imm2 = 0;
     uint32_t shift_t = 0, shift_n = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -608,7 +608,7 @@ EXPECTED_POP_T3_C = (
     "registers = (registers | (1 << t));\n"
     "UnalignedAllowed = true;\n"
     "if (((t == 13) || (((t == 15) && InITBlock(ctx)) && (!LastInITBlock(ctx))))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -626,7 +626,7 @@ int main(void) {
     uint32_t t = 0, Rt = 0, registers = 0;
     uint32_t UnalignedAllowed = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -647,7 +647,7 @@ EXPECTED_MRS_T1_C = (
     "if ((((d == 13) || (d == 15)) || (!((UInt(SYSm) >= 0 && UInt(SYSm) <= 3) ||"
     " (UInt(SYSm) >= 5 && UInt(SYSm) <= 9) ||"
     " (UInt(SYSm) >= 16 && UInt(SYSm) <= 20))))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -698,7 +698,7 @@ int main(void) {
     bool setflags = true;
     uint32_t carry = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -747,7 +747,7 @@ int main(void) {
     uint32_t shift_t = 0, shift_n = 0;
     bool setflags = true;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -765,12 +765,12 @@ REV_T2_SOURCE = (FIXTURES / "rev_t2_decoder.pseudo").read_text()
 
 EXPECTED_REV_T2_C = (
     "if ((!Consistent(Rm))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
     "d = UInt(Rd);\n"
     "m = UInt(Rm);\n"
     "if ((((d == 13) || (d == 15)) || ((m == 13) || (m == 15)))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -786,7 +786,7 @@ _REV_T2_MAIN = """\
 int main(void) {
     uint32_t R[16] = {0};
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
     uint32_t d = 0, m = 0, Rd = 0, Rm = 0;
 """
@@ -827,7 +827,7 @@ int main(void) {
     uint32_t m = 0, n = 0, t = 0;
     uint32_t shift_t = 0, shift_n = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -885,7 +885,7 @@ VCVT_T1_SOURCE = (FIXTURES / "vcvt_t1_decoder.pseudo").read_text()
 
 EXPECTED_VCVT_T1_C = (
     "if (((opc2 != 0x0) && (!((opc2 & 0x6u) == 0x4u)))) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "Related encodings"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "Related encodings"\n'
     "};\n"
     "to_integer = (((opc2 >> 2) & 1) == 1);\n"
     "dp_operation = (sz == 1);\n"
@@ -920,7 +920,7 @@ int main(void) {
     uint32_t d = 0, m = 0;
     uint32_t D = 0, Vd = 0, M = 0, Vm = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -938,7 +938,7 @@ VRINTA_T1_SOURCE = (FIXTURES / "vrinta_t1_decoder.pseudo").read_text()
 
 EXPECTED_VRINTA_T1_C = (
     "if (InITBlock(ctx)) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
     "dp_operation = (sz == 1);\n"
     "if (RM == 0x0) {  // Round to nearest, with ties away\n"
@@ -976,7 +976,7 @@ int main(void) {
     uint32_t d = 0, m = 0;
     uint32_t D = 0, Vd = 0, M = 0, Vm = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -994,7 +994,7 @@ VSEL_T1_SOURCE = (FIXTURES / "vsel_t1_decoder.pseudo").read_text()
 
 EXPECTED_VSEL_T1_C = (
     "if (InITBlock(ctx)) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
     "dp_operation = (sz == 1);\n"
     "cond = concat_bits(concat_bits(cc, (((cc >> 1) & 1) ^ ((cc >> 0) & 1)), 1)"
@@ -1021,7 +1021,7 @@ int main(void) {
     uint32_t d = 0, n = 0, m = 0;
     uint32_t D = 0, Vd = 0, N = 0, Vn = 0, M = 0, Vm = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -1063,7 +1063,7 @@ int main(void) {
     uint32_t d = 0, n = 0, m = 0;
     uint32_t D = 0, Vd = 0, N = 0, Vn = 0, M = 0, Vm = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -1081,19 +1081,19 @@ VLDM_T1_SOURCE = (FIXTURES / "vldm_t1_decoder.pseudo").read_text()
 
 EXPECTED_VLDM_T1_C = (
     "if ((((P == 0) && (U == 0)) && (W == 0))) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "Related encodings"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "Related encodings"\n'
     "};\n"
     "if (((((P == 0) && (U == 1)) && (W == 1)) && (Rn == 0xd))) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "VPOP"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "VPOP"\n'
     "};\n"
     "if (((P == 1) && (W == 0))) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "VLDR"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "VLDR"\n'
     "};\n"
     "if ((((imm8 >> 0) & 1) == 1)) {\n"
-    '    sideffects |= SIDEFFECT_SEE;  // "FLDMX"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE;  // "FLDMX"\n'
     "};\n"
     "if (((P == U) && (W == 1))) {\n"
-    "    sideffects |= SIDEFFECT_UNDEFINED;\n"
+    "    sideffect_flags |= SIDEFFECT_UNDEFINED;\n"
     "};\n"
     "// Remaining combinations are PUW = 010 (IA without !)"
     ", 011 (IA with !), 101 (DB with !)\n"
@@ -1105,13 +1105,13 @@ EXPECTED_VLDM_T1_C = (
     "imm32 = ZeroExtend(concat_bits(imm8, 0x0, 2), 32);\n"
     "regs = (UInt(imm8) / 2);\n"
     "if ((n == 15)) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
     "if ((((regs == 0) || (regs > 16)) || ((d + regs) > 32))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
     "if ((VFPSmallRegisterBank() && ((d + regs) > 16))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -1131,7 +1131,7 @@ int main(void) {
     bool single_regs = false, add = false, wback = false;
     uint32_t d = 0, n = 0, imm32 = 0, regs = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -1171,7 +1171,7 @@ int main(void) {
     uint32_t d = 0, m = 0;
     uint32_t D = 0, Vd = 0, M = 0, Vm = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     _ctx.fpscr = 0;
     Context *ctx = &_ctx;
 """
@@ -1210,7 +1210,7 @@ int main(void) {
     bool setflags = false;
     uint32_t imm32 = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 
@@ -1291,7 +1291,7 @@ def test_c_unknown_function_return_type_raises() -> None:
 _FW_MAIN = """\
 int main(void) {
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
     uint32_t x = 0, imm8 = 0xFF;
 """
@@ -1371,7 +1371,7 @@ def test_c_signedness_follows_input_types() -> None:
 _SIGNED_MAIN = """\
 int main(void) {
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
     uint32_t Rn = 0xFu;  /* all ones in a 4-bit field: -1 read as signed */
     uint32_t imm3 = 2;
@@ -1444,9 +1444,9 @@ SSAT_T1_SOURCE = (FIXTURES / "ssat_t1_decoder.pseudo").read_text()
 EXPECTED_SSAT_T1_C = (
     "if (((sh == 1) && (concat_bits(imm3, imm2, 2) == 0x0))) {\n"
     "    if (HaveDSPExt()) {\n"
-    '        sideffects |= SIDEFFECT_SEE;  // "SSAT16"\n'
+    '        sideffect_flags |= SIDEFFECT_SEE;  // "SSAT16"\n'
     "    } else {\n"
-    "        sideffects |= SIDEFFECT_UNDEFINED;\n"
+    "        sideffect_flags |= SIDEFFECT_UNDEFINED;\n"
     "    };\n"
     "};\n"
     "d = UInt(Rd);\n"
@@ -1457,7 +1457,7 @@ EXPECTED_SSAT_T1_C = (
     "shift_t = tuple_2_ret_1.f0;\n"
     "shift_n = tuple_2_ret_1.f1;\n"
     "if ((((d == 13) || (d == 15)) || ((n == 13) || (n == 15)))) {\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE;\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;\n"
     "};\n"
 )
 
@@ -1476,7 +1476,7 @@ int main(void) {
     uint32_t sh = 0, imm3 = 0, imm2 = 0;
     uint32_t shift_t = 0, shift_n = 0;
     Context _ctx = {0};
-    uint32_t sideffects = 0;
+    SideffectFlags sideffect_flags = 0;
     Context *ctx = &_ctx;
 """
 

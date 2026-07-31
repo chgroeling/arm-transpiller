@@ -15,9 +15,9 @@ EXPECTED = """\
 d = UInt(Rd)
 n = UInt(Rn)
 setflags = (S == 1)
-imm32 = ThumbExpandImm(sideffects, concat_bits(concat_bits(i, imm3, 3), imm8, 8))
+imm32 = ThumbExpandImm(sideffect_flags, concat_bits(concat_bits(i, imm3, 3), imm8, 8))
 if (((d == 13) or (d == 15)) or ((n == 13) or (n == 15))):
-    sideffects |= SIDEFFECT_UNPREDICTABLE
+    sideffect_flags |= SIDEFFECT_UNPREDICTABLE
 """
 
 
@@ -114,7 +114,7 @@ imm8 = 0
 setflags = False
 imm32 = 0
 registers = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -176,7 +176,7 @@ shift_t = 0
 shift_n = 0
 setflags = True
 
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -219,7 +219,7 @@ Rm = 0
 setflags = False
 shift_n = 0
 imm5 = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -244,7 +244,7 @@ EXPECTED_ADC_REG_PY = (
     "shift_t, shift_n = DecodeImmShift(type, concat_bits(imm3, imm2, 2))\n"
     "if ((((d == 13) or (d == 15)) or ((n == 13) or (n == 15)))"
     " or ((m == 13) or (m == 15))):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -269,7 +269,7 @@ shift_n = 0
 type = 0
 imm3 = 0
 imm2 = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -292,15 +292,15 @@ EOR_SOURCE = (FIXTURES / "eor_immediate_decoder.pseudo").read_text()
 EXPECTED_EOR_PY = (
     "# EOR (immediate) — T1 encoding\n"
     "if ((Rd == 0xf) and (S == 1)):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "TEQ (immediate)"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "TEQ (immediate)"\n'
     "d = UInt(Rd)\n"
     "n = UInt(Rn)\n"
     "setflags = (S == 1)\n"
-    "imm32, carry = ThumbExpandImm_C(sideffects,"
+    "imm32, carry = ThumbExpandImm_C(sideffect_flags,"
     " concat_bits(concat_bits(i, imm3, 3), imm8, 8)"
     ", ctx.apsr.C)\n"
     "if (((d == 13) or ((d == 15) and (S == 0))) or ((n == 13) or (n == 15))):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -325,7 +325,7 @@ imm8 = 0
 imm32 = 0
 carry = 0
 
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -367,7 +367,7 @@ Rm = 0
 setflags = False
 shift_t = 0
 shift_n = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -386,16 +386,16 @@ SUB_IMM_SOURCE = (FIXTURES / "sub_immediate_decoder.pseudo").read_text()
 
 EXPECTED_SUB_IMM_PY = (
     "if ((Rd == 0xf) and (S == 1)):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "CMP (immediate)"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "CMP (immediate)"\n'
     "if (Rn == 0xd):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "SUB (SP minus immediate)"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "SUB (SP minus immediate)"\n'
     "d = UInt(Rd)\n"
     "n = UInt(Rn)\n"
     "setflags = (S == 1)\n"
-    "imm32 = ThumbExpandImm(sideffects,"
+    "imm32 = ThumbExpandImm(sideffect_flags,"
     " concat_bits(concat_bits(i, imm3, 3), imm8, 8))\n"
     "if (((d == 13) or ((d == 15) and (S == 0))) or (n == 15)):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -417,7 +417,7 @@ i = 0
 imm3 = 0
 imm8 = 0
 imm32 = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -441,7 +441,7 @@ EXPECTED_BL_PY = (
     "concat_bits(concat_bits(S, I1, 1), I2, 1), imm10, 10), "
     "imm11, 11), 0, 1), 25)\n"
     "if (InITBlock(ctx) and (not (LastInITBlock(ctx)))):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -461,7 +461,7 @@ imm11 = 0
 I1 = 0
 I2 = 0
 imm32 = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -480,12 +480,12 @@ B_T3_SOURCE = (FIXTURES / "b_t3_decoder.pseudo").read_text()
 
 EXPECTED_B_T3_PY = (
     "if (((cond >> 1) & 0x7) == 0x7):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "Related encodings"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "Related encodings"\n'
     "imm32 = SignExtend(concat_bits(concat_bits(concat_bits("
     "concat_bits(concat_bits(S, J2, 1), J1, 1), imm6, 6), "
     "imm11, 11), 0, 1), 21)\n"
     "if InITBlock(ctx):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -504,7 +504,7 @@ J2 = 0
 imm6 = 0
 imm11 = 0
 imm32 = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -526,9 +526,9 @@ LDRH_REG_SOURCE = (FIXTURES / "ldrh_register_decoder.pseudo").read_text()
 
 EXPECTED_LDRH_REG_PY = (
     "if (Rn == 0xf):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "LDRH (literal)"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "LDRH (literal)"\n'
     "if (Rt == 0xf):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "Related instructions"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "Related instructions"\n'
     "t = UInt(Rt)\n"
     "n = UInt(Rn)\n"
     "m = UInt(Rm)\n"
@@ -537,7 +537,7 @@ EXPECTED_LDRH_REG_PY = (
     "wback = False\n"
     "shift_t, shift_n = (SRType_LSL, UInt(imm2))\n"
     "if ((t == 13) or ((m == 13) or (m == 15))):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -583,7 +583,7 @@ EXPECTED_POP_T3_PY = (
     "UnalignedAllowed = True\n"
     "if ((t == 13) or (((t == 15) and InITBlock(ctx)) and "
     "(not (LastInITBlock(ctx))))):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -599,7 +599,7 @@ t = 0
 Rt = 0
 registers = 0
 UnalignedAllowed = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -621,7 +621,7 @@ EXPECTED_MRS_T1_PY = (
     "if (((d == 13) or (d == 15)) or (not "
     "(((0 <= UInt(SYSm) <= 3) or (5 <= UInt(SYSm) <= 9) "
     "or (16 <= UInt(SYSm) <= 20))))):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -683,7 +683,7 @@ imm32 = 0
 setflags = True
 carry = 0
 
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -733,7 +733,7 @@ shift_t = 0
 shift_n = 0
 setflags = True
 
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -752,11 +752,11 @@ REV_T2_SOURCE = (FIXTURES / "rev_t2_decoder.pseudo").read_text()
 
 EXPECTED_REV_T2_PY = (
     "if (not (Consistent(Rm))):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
     "d = UInt(Rd)\n"
     "m = UInt(Rm)\n"
     "if (((d == 13) or (d == 15)) or ((m == 13) or (m == 15))):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -772,7 +772,7 @@ d = 0
 m = 0
 Rd = 0
 Rm = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -817,7 +817,7 @@ n = 0
 t = 0
 shift_t = 0
 shift_n = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -881,7 +881,7 @@ VCVT_T1_SOURCE = (FIXTURES / "vcvt_t1_decoder.pseudo").read_text()
 
 EXPECTED_VCVT_T1_PY = (
     "if ((opc2 != 0x0) and (not (((opc2 & 0x6) == 0x4)))):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "Related encodings"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "Related encodings"\n'
     "to_integer = (((opc2 >> 2) & 1) == 1)\n"
     "dp_operation = (sz == 1)\n"
     "if to_integer:\n"
@@ -938,7 +938,7 @@ VRINTA_T1_SOURCE = (FIXTURES / "vrinta_t1_decoder.pseudo").read_text()
 
 EXPECTED_VRINTA_T1_PY = (
     "if InITBlock(ctx):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
     "dp_operation = (sz == 1)\n"
     "if RM == 0x0:  # Round to nearest, with ties away\n"
     "    rmode = 0x1\n"
@@ -978,7 +978,7 @@ D = 0
 Vd = 0
 M = 0
 Vm = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -997,7 +997,7 @@ VSEL_T1_SOURCE = (FIXTURES / "vsel_t1_decoder.pseudo").read_text()
 
 EXPECTED_VSEL_T1_PY = (
     "if InITBlock(ctx):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
     "dp_operation = (sz == 1)\n"
     "cond = concat_bits(concat_bits(cc, (((cc >> 1) & 1) ^ ((cc >> 0) & 1)), 1)"
     ", 0, 1)\n"
@@ -1031,7 +1031,7 @@ N = 0
 Vn = 0
 M = 0
 Vm = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -1081,7 +1081,7 @@ N = 0
 Vn = 0
 M = 0
 Vm = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -1100,15 +1100,15 @@ VLDM_T1_SOURCE = (FIXTURES / "vldm_t1_decoder.pseudo").read_text()
 
 EXPECTED_VLDM_T1_PY = (
     "if (((P == 0) and (U == 0)) and (W == 0)):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "Related encodings"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "Related encodings"\n'
     "if ((((P == 0) and (U == 1)) and (W == 1)) and (Rn == 0xd)):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "VPOP"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "VPOP"\n'
     "if ((P == 1) and (W == 0)):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "VLDR"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "VLDR"\n'
     "if (((imm8 >> 0) & 1) == 1):\n"
-    '    sideffects |= SIDEFFECT_SEE  # "FLDMX"\n'
+    '    sideffect_flags |= SIDEFFECT_SEE  # "FLDMX"\n'
     "if ((P == U) and (W == 1)):\n"
-    "    sideffects |= SIDEFFECT_UNDEFINED\n"
+    "    sideffect_flags |= SIDEFFECT_UNDEFINED\n"
     "# Remaining combinations are PUW = 010 (IA without !)"
     ", 011 (IA with !), 101 (DB with !)\n"
     "single_regs = False\n"
@@ -1119,11 +1119,11 @@ EXPECTED_VLDM_T1_PY = (
     "imm32 = ZeroExtend(concat_bits(imm8, 0x0, 2), 32)\n"
     "regs = (UInt(imm8) // 2)\n"
     "if (n == 15):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
     "if (((regs == 0) or (regs > 16)) or ((d + regs) > 32)):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
     "if (VFPSmallRegisterBank() and ((d + regs) > 16)):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -1149,7 +1149,7 @@ d = 0
 n = 0
 imm32 = 0
 regs = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -1194,7 +1194,7 @@ D = 0
 Vd = 0
 M = 0
 Vm = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 ctx.fpscr = 0
 """
@@ -1235,7 +1235,7 @@ Rd = 0
 Rn = 0
 setflags = False
 imm32 = 0
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 
@@ -1390,16 +1390,16 @@ SSAT_T1_SOURCE = (FIXTURES / "ssat_t1_decoder.pseudo").read_text()
 EXPECTED_SSAT_T1_PY = (
     "if ((sh == 1) and (concat_bits(imm3, imm2, 2) == 0x0)):\n"
     "    if HaveDSPExt():\n"
-    '        sideffects |= SIDEFFECT_SEE  # "SSAT16"\n'
+    '        sideffect_flags |= SIDEFFECT_SEE  # "SSAT16"\n'
     "    else:\n"
-    "        sideffects |= SIDEFFECT_UNDEFINED\n"
+    "        sideffect_flags |= SIDEFFECT_UNDEFINED\n"
     "d = UInt(Rd)\n"
     "n = UInt(Rn)\n"
     "saturate_to = (UInt(sat_imm) + 1)\n"
     "shift_t, shift_n = DecodeImmShift(concat_bits(sh, 0, 1), "
     "concat_bits(imm3, imm2, 2))\n"
     "if (((d == 13) or (d == 15)) or ((n == 13) or (n == 15))):\n"
-    "    sideffects |= SIDEFFECT_UNPREDICTABLE\n"
+    "    sideffect_flags |= SIDEFFECT_UNPREDICTABLE\n"
 )
 
 
@@ -1423,7 +1423,7 @@ imm2 = 0
 shift_t = 0
 shift_n = 0
 
-sideffects = 0
+sideffect_flags = 0
 ctx = Context()
 """
 

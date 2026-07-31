@@ -7,8 +7,8 @@ The ARM manual defines instruction decode and operation behaviour in a domain‑
 ```text
 in   (pseudocode)   if d IN {13,15} then UNDEFINED;
 
-out  --target c      if (((d == 13) || (d == 15))) { sideffects |= SIDEFFECT_UNDEFINED; };
-out  --target python  if (d in (13, 15)): sideffects |= SIDEFFECT_UNDEFINED
+out  --target c      if (((d == 13) || (d == 15))) { sideffect_flags |= SIDEFFECT_UNDEFINED; };
+out  --target python  if (d in (13, 15)): sideffect_flags |= SIDEFFECT_UNDEFINED
 ```
 
 ---
@@ -66,9 +66,9 @@ if d IN {13,15} || n IN {13,15} then UNPREDICTABLE;
 
 ```c
 d = UInt(Rd);
-imm32 = ThumbExpandImm(&sideffects, concat_bits(concat_bits(i, imm3, 3), imm8, 8));
+imm32 = ThumbExpandImm(&sideffect_flags, concat_bits(concat_bits(i, imm3, 3), imm8, 8));
 if ((((d == 13) || (d == 15)) || ((n == 13) || (n == 15)))) {
-    sideffects |= SIDEFFECT_UNPREDICTABLE;
+    sideffect_flags |= SIDEFFECT_UNPREDICTABLE;
 };
 ```
 
@@ -76,9 +76,9 @@ if ((((d == 13) || (d == 15)) || ((n == 13) || (n == 15)))) {
 
 ```python
 d = UInt(Rd)
-imm32 = ThumbExpandImm(sideffects, concat_bits(concat_bits(i, imm3, 3), imm8, 8))
+imm32 = ThumbExpandImm(sideffect_flags, concat_bits(concat_bits(i, imm3, 3), imm8, 8))
 if ((d in (13, 15)) or (n in (13, 15))):
-    sideffects |= SIDEFFECT_UNPREDICTABLE
+    sideffect_flags |= SIDEFFECT_UNPREDICTABLE
 ```
 
 ---
@@ -534,7 +534,7 @@ Error: Cannot determine the type of 'a'. Add it to known_types.py (exact match o
 
 ## Runtime model
 
-Generated code calls into a small runtime library that emulates ARM pseudocode primitives (`UInt`, `SInt`, `ThumbExpandImm`, `SignExtend`, …). Side‑effecting statements operate on a standalone `sideffects` variable and architectural state through a `Context` object. Both must be provided by the caller:
+Generated code calls into a small runtime library that emulates ARM pseudocode primitives (`UInt`, `SInt`, `ThumbExpandImm`, `SignExtend`, …). Side‑effecting statements operate on a standalone `sideffect_flags` variable and architectural state through a `Context` object. Both must be provided by the caller:
 
 | Mechanism                | Behaviour                                                                                                                |
 |--------------------------|--------------------------------------------------------------------------------------------------------------------------|
@@ -549,16 +549,16 @@ Generated code calls into a small runtime library that emulates ARM pseudocode p
 
 Before invoking transpiled code, the caller must provide:
 
-- **`sideffects`** — a zero‑initialised side‑effect variable:
-  - **C:** `uint32_t sideffects = 0;`
-  - **Python:** `sideffects = 0`
+- **`sideffect_flags`** — a zero‑initialised side‑effect bitfield:
+  - **C:** `SideffectFlags sideffect_flags = 0;`
+  - **Python:** `sideffect_flags: SideffectFlags = 0`
 - **`Context`** — a context object holding architectural state:
   - **C:** `Context _ctx = {0}; Context *ctx = &_ctx;`
   - **Python:** `ctx = Context()`
 
-The transpiled code reads and writes `sideffects` and `ctx` directly.  Any called code
+The transpiled code reads and writes `sideffect_flags` and `ctx` directly.  Any called code
 (e.g. the runtime library functions `ThumbExpandImm` / `ThumbExpandImm_C`) also takes
-`sideffects` as an explicit argument.
+`sideffect_flags` as an explicit argument.
 
 ---
 
