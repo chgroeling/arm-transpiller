@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] — 2026-07-31
+
+### Changed
+
+- **Breaking:** `sideeffect` field removed from `Context`.  Transpiled code uses a
+  standalone `sideffect_flags` variable (type `SideffectFlags`, aliased from
+  `uint32_t` in C and `int` in Python) instead of `ctx->sideeffect` /
+  `ctx.sideeffect`.  Runtime functions `ThumbExpandImm` and `ThumbExpandImm_C`
+  take `sideffect_flags` as an explicit first argument.  The caller must provide
+  `sideffect_flags = 0` and a `Context` before invoking transpiled code
+  (documented as caller contract in the README).
+
+## [1.1.1] — 2026-07-27
+
+### Fixed
+
+- `pyproject.toml` version was not bumped in the 1.1.0 release.
+
 ## [1.1.0] — 2026-07-27
 
 ### Added
