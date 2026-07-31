@@ -7,7 +7,7 @@ packages = ["src/arm_transpiller"]
 
 [project]
 name = "arm-transpiller"
-version = "0.1.0"
+version = "2.0.0"
 description = "Transpile ARM Architecture Reference Manual pseudocode into C or Python"
 requires-python = ">=3.12"
 dependencies = [

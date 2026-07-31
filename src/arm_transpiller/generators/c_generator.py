@@ -193,13 +193,13 @@ class CGenerator(CodeGenerator):
             case Comment():
                 return _INDENT * indent + f"// {stmt.text}"
             case Unpredictable():
-                return _INDENT * indent + "ctx->sideeffect |= SIDEFFECT_UNPREDICTABLE"
+                return _INDENT * indent + "sideffect_flags |= SIDEFFECT_UNPREDICTABLE"
             case Undefined():
-                return _INDENT * indent + "ctx->sideeffect |= SIDEFFECT_UNDEFINED"
+                return _INDENT * indent + "sideffect_flags |= SIDEFFECT_UNDEFINED"
             case SeeStmt():
                 return (
                     _INDENT * indent
-                    + f'ctx->sideeffect |= SIDEFFECT_SEE;  // "{stmt.instruction}"'
+                    + f'sideffect_flags |= SIDEFFECT_SEE;  // "{stmt.instruction}"'
                 )
             case CaseOf():
                 return self._case_of(stmt, indent)
@@ -293,6 +293,9 @@ class CGenerator(CodeGenerator):
                 if expr.name in (
                     "ThumbExpandImm",
                     "ThumbExpandImm_C",
+                ):
+                    args = ", ".join(["&sideffect_flags", *partial])
+                elif expr.name in (
                     "InITBlock",
                     "LastInITBlock",
                 ):
