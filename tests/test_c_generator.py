@@ -1192,8 +1192,7 @@ EXPECTED_RSB_IMM_T1_C = (
     "d = UInt(Rd);\n"
     "n = UInt(Rn);\n"
     "setflags = (!InITBlock(ctx));\n"
-    "imm32 = Zeros(32);\n"
-    "// immediate = #0\n"
+    "imm32 = Zeros(32);  // immediate = #0\n"
 )
 
 
@@ -1202,6 +1201,22 @@ def test_c_rsb_immediate_t1_decoder() -> None:
     gen = CGenerator()
     output = gen.generate(program)
     assert output == EXPECTED_RSB_IMM_T1_C
+
+
+def test_c_comment_inline_on_same_line() -> None:
+    program = parse("x = 1;  // inline\n")
+    gen = CGenerator()
+    output = gen.generate(program)
+    expected = "x = 1;  // inline\n"
+    assert output == expected
+
+
+def test_c_comment_standalone_on_own_line() -> None:
+    program = parse("// standalone\nx = 1;\n")
+    gen = CGenerator()
+    output = gen.generate(program)
+    expected = "// standalone\nx = 1;\n"
+    assert output == expected
 
 
 _RSB_IMM_T1_MAIN = """\

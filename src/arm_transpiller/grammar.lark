@@ -27,6 +27,7 @@ BIT_LITERAL: "'0'" | "'1'"
 BITSTRING_LITERAL: /'[01]{2,}'/
 STRING: /"[^"]*"/
 COMMENT_TOKEN: /__CMT__"[^"]*"/
+COMMENT_INLINE_TOKEN: /__CMT_INLINE__"[^"]*"/
 SEE_ARG: /__SEE__"(?:[^"\\]|\\.)*"/
 WILDCARD: "-"
 
@@ -54,6 +55,7 @@ statement_list: (statement ";")* statement ";"?
           | statement_call
           | see_stmt
           | comment_statement
+          | trailing_comment_statement
           | case_stmt
           | when_clause
 
@@ -63,7 +65,9 @@ when_clause: WHEN_KW expression inline_comment? body
 
 comment_statement: COMMENT_TOKEN -> comment
 
-inline_comment: COMMENT_TOKEN ";" -> comment
+trailing_comment_statement: COMMENT_INLINE_TOKEN -> trailing_comment
+
+inline_comment: (COMMENT_TOKEN | COMMENT_INLINE_TOKEN) ";" -> trailing_comment
 
 statement_call: FUNC_NAME "(" [expression ("," expression)*] ")"
 
