@@ -161,6 +161,20 @@ class CGenerator(CodeGenerator):
     def _c_name(name: str) -> str:
         return f"_{name}" if name in _C_KEYWORDS else name
 
+    def _emit_statements(self, stmts: list[Statement], indent: int) -> list[str]:
+        lines: list[str] = []
+        for stmt in stmts:
+            if isinstance(stmt, Comment) and stmt.trailing and lines:
+                lines[-1] += f"  // {stmt.text}"
+            elif isinstance(stmt, Comment):
+                lines.append(self.visit_statement(stmt, indent))
+            else:
+                line = self.visit_statement(stmt, indent)
+                if not isinstance(stmt, _NO_SEMICOLON):
+                    line += ";"
+                lines.append(line)
+        return lines
+
     def generate(self, program: Program) -> str:
         """Emit C source for *program*.
 
@@ -170,12 +184,7 @@ class CGenerator(CodeGenerator):
         """
         self._tuple_2_counter = 0
         self._infer_types(program)
-        lines: list[str] = []
-        for stmt in program.statements:
-            line = self.visit_statement(stmt, 0)
-            if not isinstance(stmt, _NO_SEMICOLON):
-                line += ";"
-            lines.append(line)
+        lines = self._emit_statements(program.statements, 0)
         return "\n".join(lines) + "\n"
 
     def visit_statement(self, stmt: Statement, indent: int = 0) -> str:
@@ -204,7 +213,7 @@ class CGenerator(CodeGenerator):
             case CaseOf():
                 return self._case_of(stmt, indent)
             case WhenClause():
-                return "\n".join(self.visit_statement(s, indent) for s in stmt.body)
+                return "\n".join(self._emit_statements(stmt.body, indent))
             case _:
                 raise NotImplementedError(f"No visitor for {type(stmt).__name__}")
 
@@ -377,18 +386,10 @@ class CGenerator(CodeGenerator):
         pad = _INDENT * indent
         cond = self.visit_expression(stmt.condition)
         lines = [f"{pad}if ({cond}) {{"]
-        for s in stmt.then_body:
-            body_line = self.visit_statement(s, indent + 1)
-            if not isinstance(s, _NO_SEMICOLON):
-                body_line += ";"
-            lines.append(body_line)
+        lines.extend(self._emit_statements(stmt.then_body, indent + 1))
         if stmt.else_body:
             lines.append(f"{pad}}} else {{")
-            for s in stmt.else_body:
-                body_line = self.visit_statement(s, indent + 1)
-                if not isinstance(s, _NO_SEMICOLON):
-                    body_line += ";"
-                lines.append(body_line)
+            lines.extend(self._emit_statements(stmt.else_body, indent + 1))
         lines.append(f"{pad}}}")
         return "\n".join(lines)
 
@@ -398,11 +399,7 @@ class CGenerator(CodeGenerator):
         start = self.visit_expression(stmt.start)
         end = self.visit_expression(stmt.end)
         lines = [f"{pad}for (int {var} = {start}; {var} <= {end}; {var}++) {{"]
-        for s in stmt.body:
-            body_line = self.visit_statement(s, indent + 1)
-            if not isinstance(s, _NO_SEMICOLON):
-                body_line += ";"
-            lines.append(body_line)
+        lines.extend(self._emit_statements(stmt.body, indent + 1))
         lines.append(f"{pad}}}")
         return "\n".join(lines)
 
@@ -421,17 +418,9 @@ class CGenerator(CodeGenerator):
                 lines.append(f"{pad}if ({expr} == {pattern}) {{{comment}")
             else:
                 lines.append(f"{pad}}} else if ({expr} == {pattern}) {{{comment}")
-            for s in clause.body:
-                body_line = self.visit_statement(s, indent + 1)
-                if not isinstance(s, _NO_SEMICOLON):
-                    body_line += ";"
-                lines.append(body_line)
+            lines.extend(self._emit_statements(clause.body, indent + 1))
         if stmt.else_body:
             lines.append(f"{pad}}} else {{")
-            for s in stmt.else_body:
-                body_line = self.visit_statement(s, indent + 1)
-                if not isinstance(s, _NO_SEMICOLON):
-                    body_line += ";"
-                lines.append(body_line)
+            lines.extend(self._emit_statements(stmt.else_body, indent + 1))
         lines.append(f"{pad}}}")
         return "\n".join(lines)

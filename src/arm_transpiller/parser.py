@@ -82,7 +82,7 @@ def _preprocess_indentation(source: str) -> str:
 
         result.append(code_only)
         if inline_comment:
-            result.append(f'__CMT__"{inline_comment}";')
+            result.append(f'__CMT_INLINE__"{inline_comment}";')
 
     while len(indent_stack) > 1:
         result.append("end;")
@@ -237,7 +237,13 @@ class ASTBuilder(Transformer[Any, Any]):
         token = cast(Token, items[0])
         raw = str(token)
         text = raw[len('__CMT__"') : -1]
-        return Comment(text=text)
+        return Comment(text=text, trailing=False)
+
+    def trailing_comment(self, items: list[Any]) -> Comment:
+        token = cast(Token, items[0])
+        raw = str(token)
+        text = raw[len('__CMT_INLINE__"') : -1]
+        return Comment(text=text, trailing=True)
 
     def or_expr(self, items: list[Any]) -> Expression:
         return self._binop_chain(items)

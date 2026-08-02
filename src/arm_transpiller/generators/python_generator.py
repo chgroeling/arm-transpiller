@@ -99,6 +99,17 @@ class PythonGenerator(CodeGenerator):
             return "False"
         return "0"
 
+    def _emit_statements(self, stmts: list[Statement], indent: int) -> list[str]:
+        lines: list[str] = []
+        for stmt in stmts:
+            if isinstance(stmt, Comment) and stmt.trailing and lines:
+                lines[-1] += f"  # {stmt.text}"
+            elif isinstance(stmt, Comment):
+                lines.append(self.visit_statement(stmt, indent))
+            else:
+                lines.append(self.visit_statement(stmt, indent))
+        return lines
+
     def generate(self, program: Program) -> str:
         """Emit Python source for *program*.
 
@@ -107,7 +118,7 @@ class PythonGenerator(CodeGenerator):
             trailing newline.
         """
         self._infer_types(program)
-        return "\n".join(self.visit_statement(s, 0) for s in program.statements) + "\n"
+        return "\n".join(self._emit_statements(program.statements, 0)) + "\n"
 
     def visit_statement(self, stmt: Statement, indent: int = 0) -> str:
         match stmt:
@@ -135,7 +146,7 @@ class PythonGenerator(CodeGenerator):
             case CaseOf():
                 return self._case_of(stmt, indent)
             case WhenClause():
-                return "\n".join(self.visit_statement(s, indent) for s in stmt.body)
+                return "\n".join(self._emit_statements(stmt.body, indent))
             case _:
                 raise NotImplementedError(f"No visitor for {type(stmt).__name__}")
 
@@ -297,12 +308,10 @@ class PythonGenerator(CodeGenerator):
         pad = _INDENT * indent
         cond = self.visit_expression(stmt.condition)
         lines = [f"{pad}if {cond}:"]
-        for s in stmt.then_body:
-            lines.append(self.visit_statement(s, indent + 1))
+        lines.extend(self._emit_statements(stmt.then_body, indent + 1))
         if stmt.else_body:
             lines.append(f"{pad}else:")
-            for s in stmt.else_body:
-                lines.append(self.visit_statement(s, indent + 1))
+            lines.extend(self._emit_statements(stmt.else_body, indent + 1))
         return "\n".join(lines)
 
     def _for_loop(self, stmt: ForLoop, indent: int) -> str:
@@ -311,8 +320,7 @@ class PythonGenerator(CodeGenerator):
         start = self.visit_expression(stmt.start)
         end = self.visit_expression(stmt.end)
         lines = [f"{pad}for {var} in range({start}, {end} + 1):"]
-        for s in stmt.body:
-            lines.append(self.visit_statement(s, indent + 1))
+        lines.extend(self._emit_statements(stmt.body, indent + 1))
         return "\n".join(lines)
 
     def _statement_call(self, stmt: StatementCall, indent: int) -> str:
@@ -328,10 +336,8 @@ class PythonGenerator(CodeGenerator):
             keyword = "if" if i == 0 else "elif"
             comment = f"  # {clause.comment}" if clause.comment else ""
             lines.append(f"{pad}{keyword} {expr} == {pattern}:{comment}")
-            for s in clause.body:
-                lines.append(self.visit_statement(s, indent + 1))
+            lines.extend(self._emit_statements(clause.body, indent + 1))
         if stmt.else_body:
             lines.append(f"{pad}else:")
-            for s in stmt.else_body:
-                lines.append(self.visit_statement(s, indent + 1))
+            lines.extend(self._emit_statements(stmt.else_body, indent + 1))
         return "\n".join(lines)

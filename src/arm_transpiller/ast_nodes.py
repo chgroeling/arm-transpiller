@@ -191,6 +191,7 @@ class ForLoop(Statement):
 @dataclass(frozen=True)
 class Comment(Statement):
     text: str
+    trailing: bool = False
 
 
 @dataclass(frozen=True)
