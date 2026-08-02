@@ -17,6 +17,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `sideffect_flags = 0` and a `Context` before invoking transpiled code
   (documented as caller contract in the README).
 
+## [2.0.1] — 2026-08-02
+
+### Fixed
+
+- Inline comments (trailing `//` on a code line) are now emitted on the same line
+  as their associated statement in generated C and Python output, instead of on a
+  separate line.
+
+## [2.0.0] — 2026-08-02
+
+### Changed
+
+- **Breaking:** Side-effect flags are now passed as a standalone `sideffect_flags`
+  variable instead of being embedded in `Context`.
+
 ## [1.1.1] — 2026-07-27
 
 ### Fixed
